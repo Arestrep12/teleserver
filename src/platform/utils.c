@@ -1,10 +1,10 @@
 #include "platform.h"
+#include "log.h"
 #include <sys/time.h>
-#include <stdio.h>
 
 void platform_init(void) {
 	// Inicialización específica de plataforma si es necesaria
-	printf("Plataforma: %s\n", PLATFORM_NAME);
+LOG_INFO("Plataforma: %s\n", PLATFORM_NAME);
 }
 
 void platform_cleanup(void) {

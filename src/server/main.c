@@ -6,6 +6,7 @@
 
 #include "server.h"
 #include "platform.h"
+#include "log.h"
 
 static void usage(const char *prog) {
     fprintf(stderr, "Usage: %s [--port N] [--verbose]\n", prog);
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (verbose) {
-        fprintf(stderr, "TeleServer running on UDP/%u\n", (unsigned)server_get_port(srv));
+        LOG_INFO("TeleServer running on UDP/%u\n", (unsigned)server_get_port(srv));
     }
 
     // Ejecutar hasta que el proceso sea terminado externamente

@@ -1,4 +1,5 @@
 #include "handlers.h"
+#include "time_source.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -27,8 +28,8 @@ int handle_time(const CoapMessage *req, CoapMessage *resp) {
     (void)req;
     if (!resp) return -1;
 
-    // Tiempo en milisegundos desde epoch
-    uint64_t now = platform_get_time_ms();
+    // Tiempo en milisegundos desde epoch (inyectable)
+    uint64_t now = time_source_now_ms();
     int n = snprintf((char *)resp->payload_buffer, sizeof(resp->payload_buffer), "%llu",
                      (unsigned long long)now);
     if (n < 0) return -1;

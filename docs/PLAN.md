@@ -21,8 +21,10 @@ Estado actual (2025-09-29)
 - Fase 5 (Codec CoAP decode/encode): COMPLETADA
 - Fase 6 (Núcleo/dispatcher + handlers): COMPLETADA
 - Fase 7 (Servidor UDP principal — integración): COMPLETADA
+- Fase 8 (Cliente CoAP mínimo — CLI): COMPLETADA
+- Fase 9 (Logging y observabilidad): COMPLETADA
 - Fase 0 (Kickoff y convenciones): COMPLETADA
-- Próximo paso recomendado: Fase 8 (Cliente CoAP mínimo — CLI)
+- Próximo paso recomendado: Fase 10 (Calidad de código y seguridad)
 
 Checklist de progreso
 - [x] Fase 0: Kickoff y convenciones
@@ -33,7 +35,8 @@ Checklist de progreso
 - [x] Fase 5: Codec CoAP (decode/encode)
 - [x] Fase 6: Núcleo/dispatcher + handlers
 - [x] Fase 7: Servidor UDP principal (integración)
-- [ ] Fase 7: Servidor UDP principal (integración)
+- [x] Fase 8: Cliente CoAP mínimo (CLI)
+- [x] Fase 9: Logging y observabilidad
 - [ ] Fase 8: Cliente CoAP mínimo (CLI)
 - [ ] Fase 9: Logging y observabilidad
 - [ ] Fase 10: Calidad de código y seguridad

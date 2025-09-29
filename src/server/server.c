@@ -3,10 +3,10 @@
 #include "event_loop.h"
 #include "coap_codec.h"
 #include "dispatcher.h"
+#include "log.h"
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -22,6 +22,33 @@ struct Server {
     uint16_t port;
 };
 
+static void process_datagram(Server *srv,
+                             const uint8_t *buf, size_t n,
+                             const struct sockaddr *peer, socklen_t peer_len) {
+    CoapMessage req; coap_message_init(&req);
+    int rc = coap_decode(&req, buf, n);
+    if (rc != 0) {
+        if (srv->verbose) LOG_WARN("coap_decode error %d\n", rc);
+        return;
+    }
+
+    CoapMessage resp; coap_message_init(&resp);
+    rc = dispatcher_handle_request(&req, &resp);
+    if (rc != 0) {
+        if (srv->verbose) LOG_WARN("dispatcher error %d\n", rc);
+        return;
+    }
+
+    uint8_t out[SEND_BUFFER_SIZE];
+    int out_n = coap_encode(&resp, out, sizeof(out));
+    if (out_n <= 0) {
+        if (srv->verbose) LOG_WARN("coap_encode error %d\n", out_n);
+        return;
+    }
+
+    (void)platform_socket_sendto(srv->sock, out, (size_t)out_n, peer, peer_len);
+}
+
 static void on_readable(int fd, EventType events, void *user_data) {
     (void)events;
     Server *srv = (Server *)user_data;
@@ -29,40 +56,15 @@ static void on_readable(int fd, EventType events, void *user_data) {
 
     uint8_t buf[RECV_BUFFER_SIZE];
     struct sockaddr_storage peer;
-    socklen_t peer_len = (socklen_t)sizeof(peer);
 
     for (;;) {
+        socklen_t peer_len = (socklen_t)sizeof(peer);
         ssize_t n = platform_socket_recvfrom(srv->sock, buf, sizeof(buf),
                                              (struct sockaddr *)&peer,
                                              &peer_len);
         if (n == PLATFORM_EAGAIN) break;
         if (n <= 0) break;
-
-        CoapMessage req; coap_message_init(&req);
-        int rc = coap_decode(&req, buf, (size_t)n);
-        if (rc != 0) {
-            if (srv->verbose) fprintf(stderr, "coap_decode error %d\n", rc);
-            continue;
-        }
-
-        CoapMessage resp; coap_message_init(&resp);
-        rc = dispatcher_handle_request(&req, &resp);
-        if (rc != 0) {
-            if (srv->verbose) fprintf(stderr, "dispatcher error %d\n", rc);
-            continue;
-        }
-
-        uint8_t out[SEND_BUFFER_SIZE];
-        int out_n = coap_encode(&resp, out, sizeof(out));
-        if (out_n <= 0) {
-            if (srv->verbose) fprintf(stderr, "coap_encode error %d\n", out_n);
-            continue;
-        }
-
-        ssize_t sent = platform_socket_sendto(srv->sock, out, (size_t)out_n,
-                                              (struct sockaddr *)&peer,
-                                              peer_len);
-        (void)sent; // en UDP, si falla, simplemente seguimos
+        process_datagram(srv, buf, (size_t)n, (const struct sockaddr *)&peer, peer_len);
     }
 }
 
@@ -109,7 +111,7 @@ Server *server_create(uint16_t port, bool verbose) {
     }
 
     if (srv->verbose) {
-        fprintf(stderr, "Server listening UDP/%u\n", (unsigned)srv->port);
+        LOG_INFO("Server listening UDP/%u\n", (unsigned)srv->port);
     }
 
     return srv;
