@@ -1,0 +1,26 @@
+# Build artifacts
+/build/
+/bin/
+/**/*.dSYM/
+*.dSYM/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.out
+
+# OS/macOS
+.DS_Store
+
+# Tooling
+compile_commands.json
+.clangd/
+
+# IDE/editor
+.vscode/
+.idea/
+*.log
+
+# Project
+WARP.md

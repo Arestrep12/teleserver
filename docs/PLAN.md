@@ -13,25 +13,26 @@ Principios y restricciones
 - macOS (desarrollo): kqueue; Linux/AWS: epoll; fallback poll/select si hiciera falta
 - Arquitectura por módulos: platform/, coap/, core/, server/, clients/
 
-Estado actual (2025-09-23)
+Estado actual (2025-09-29)
 - Fase 1 (Infraestructura de build): COMPLETADA
 - Fase 2 (Plataforma/sockets): COMPLETADA
 - Fase 3 (Event loop kqueue/epoll): COMPLETADA
 - Fase 4 (Tipos y constantes CoAP): COMPLETADA
 - Fase 5 (Codec CoAP decode/encode): COMPLETADA
 - Fase 6 (Núcleo/dispatcher + handlers): COMPLETADA
-- Fase 0 (Kickoff y convenciones): PENDIENTE/PARCIAL (faltan .gitignore, LICENSE, README, clang-* si se desea)
-- Próximo paso recomendado: Fase 7 (Servidor UDP principal — integración)
+- Fase 7 (Servidor UDP principal — integración): COMPLETADA
+- Fase 0 (Kickoff y convenciones): COMPLETADA
+- Próximo paso recomendado: Fase 8 (Cliente CoAP mínimo — CLI)
 
 Checklist de progreso
-- [ ] Fase 0: Kickoff y convenciones
+- [x] Fase 0: Kickoff y convenciones
 - [x] Fase 1: Makefile y sistema de build
 - [x] Fase 2: Wrappers de plataforma/sockets + tests
 - [x] Fase 3: Event loop (kqueue/epoll)
 - [x] Fase 4: Tipos y constantes CoAP (RFC 7252)
 - [x] Fase 5: Codec CoAP (decode/encode)
 - [x] Fase 6: Núcleo/dispatcher + handlers
-- [ ] Fase 6: Núcleo/dispatcher + handlers
+- [x] Fase 7: Servidor UDP principal (integración)
 - [ ] Fase 7: Servidor UDP principal (integración)
 - [ ] Fase 8: Cliente CoAP mínimo (CLI)
 - [ ] Fase 9: Logging y observabilidad
@@ -203,4 +204,4 @@ Riesgos y mitigaciones
 - Seguridad: validar tamaños y punteros; no confiar en input de red; sin UB
 
 Próximo paso sugerido
-- Implementar Fase 3 (event loop kqueue/epoll) y sus tests; luego integrar en servidor.
+- Implementar Fase 8 (Cliente CoAP mínimo — CLI) y sus pruebas; luego continuar con Fase 9 (Logging y observabilidad).
