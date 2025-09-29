@@ -16,16 +16,19 @@ Principios y restricciones
 Estado actual (2025-09-23)
 - Fase 1 (Infraestructura de build): COMPLETADA
 - Fase 2 (Plataforma/sockets): COMPLETADA
+- Fase 3 (Event loop kqueue/epoll): COMPLETADA
+- Fase 4 (Tipos y constantes CoAP): COMPLETADA
+- Fase 5 (Codec CoAP decode/encode): COMPLETADA
 - Fase 0 (Kickoff y convenciones): PENDIENTE/PARCIAL (faltan .gitignore, LICENSE, README, clang-* si se desea)
-- Próximo paso recomendado: Fase 3 (Event loop kqueue/epoll)
+- Próximo paso recomendado: Fase 6 (dispatcher/handlers)
 
 Checklist de progreso
 - [ ] Fase 0: Kickoff y convenciones
 - [x] Fase 1: Makefile y sistema de build
 - [x] Fase 2: Wrappers de plataforma/sockets + tests
-- [ ] Fase 3: Event loop (kqueue/epoll)
-- [ ] Fase 4: Tipos y constantes CoAP (RFC 7252)
-- [ ] Fase 5: Codec CoAP (decode/encode)
+- [x] Fase 3: Event loop (kqueue/epoll)
+- [x] Fase 4: Tipos y constantes CoAP (RFC 7252)
+- [x] Fase 5: Codec CoAP (decode/encode)
 - [ ] Fase 6: Núcleo/dispatcher + handlers
 - [ ] Fase 7: Servidor UDP principal (integración)
 - [ ] Fase 8: Cliente CoAP mínimo (CLI)
