@@ -32,6 +32,11 @@ static void process_datagram(Server *srv,
         return;
     }
 
+    // Log de entrada (request CoAP válido)
+    if (srv->verbose) {
+        log_coap_rx(&req, peer, peer_len);
+    }
+
     CoapMessage resp; coap_message_init(&resp);
     rc = dispatcher_handle_request(&req, &resp);
     if (rc != 0) {
@@ -57,6 +62,11 @@ static void process_datagram(Server *srv,
     if (out_n <= 0) {
         if (srv->verbose) LOG_WARN("coap_encode error %d\n", out_n);
         return;
+    }
+
+    // Log de salida (solo 2.xx)
+    if (srv->verbose) {
+        log_coap_tx(&resp, peer, peer_len);
     }
 
     (void)platform_socket_sendto(srv->sock, out, (size_t)out_n, peer, peer_len);

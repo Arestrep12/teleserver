@@ -2,6 +2,11 @@
 
 #include <time.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+
+#include "coap.h"
 
 static LogLevel g_level = LOG_LEVEL_INFO; // por defecto: INFO
 static FILE *g_stream = NULL;             // NULL => usar stderr
@@ -35,4 +40,52 @@ void log_printf(LogLevel level, const char *fmt, ...) {
     va_start(ap, fmt);
     vfprintf(out, fmt, ap);
     va_end(ap);
+}
+
+static void format_sockaddr(const struct sockaddr *sa, socklen_t sa_len,
+                            char *out, size_t out_size) {
+    if (!sa || !out || out_size == 0) return;
+    out[0] = '\0';
+    if (sa->sa_family == AF_INET && sa_len >= (socklen_t)sizeof(struct sockaddr_in)) {
+        const struct sockaddr_in *in = (const struct sockaddr_in *)sa;
+        char ip[INET_ADDRSTRLEN];
+        if (inet_ntop(AF_INET, &in->sin_addr, ip, sizeof ip)) {
+            snprintf(out, out_size, "%s:%u", ip, (unsigned)ntohs(in->sin_port));
+        }
+    }
+#ifdef AF_INET6
+    else if (sa->sa_family == AF_INET6 && sa_len >= (socklen_t)sizeof(struct sockaddr_in6)) {
+        const struct sockaddr_in6 *in6 = (const struct sockaddr_in6 *)sa;
+        char ip[INET6_ADDRSTRLEN];
+        if (inet_ntop(AF_INET6, &in6->sin6_addr, ip, sizeof ip)) {
+            snprintf(out, out_size, "[%s]:%u", ip, (unsigned)ntohs(in6->sin6_port));
+        }
+    }
+#endif
+    else {
+        snprintf(out, out_size, "unknown");
+    }
+}
+
+void log_coap_rx(const CoapMessage *msg, const struct sockaddr *peer, socklen_t peer_len) {
+    if (!msg) return;
+    char peer_str[64]; format_sockaddr(peer, peer_len, peer_str, sizeof(peer_str));
+    char path[128];
+    int pl = coap_message_get_uri_path(msg, path, sizeof(path));
+    if (pl < 0) snprintf(path, sizeof(path), "(invalid)");
+    const char *mstr = coap_code_to_string(msg->code);
+    log_printf(LOG_LEVEL_INFO, "RX %s %s from %s mid=%u tkl=%u payload=%zuB\n",
+               mstr ? mstr : "METHOD", path[0] ? path : "(root)", peer_str,
+               (unsigned)msg->message_id, (unsigned)msg->token_length,
+               msg->payload_length);
+}
+
+void log_coap_tx(const CoapMessage *msg, const struct sockaddr *peer, socklen_t peer_len) {
+    if (!msg) return;
+    if (coap_code_class(msg->code) != 2) return; // solo éxitos 2.xx
+    char peer_str[64]; format_sockaddr(peer, peer_len, peer_str, sizeof(peer_str));
+    const char *rstr = coap_code_to_string(msg->code);
+    log_printf(LOG_LEVEL_INFO, "TX %s to %s mid=%u payload=%zuB\n",
+               rstr ? rstr : "2.xx", peer_str,
+               (unsigned)msg->message_id, msg->payload_length);
 }
