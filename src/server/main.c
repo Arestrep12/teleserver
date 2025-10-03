@@ -7,6 +7,7 @@
 #include "server.h"
 #include "platform.h"
 #include "log.h"
+#include "telemetry_storage.h"
 
 static void usage(const char *prog) {
     fprintf(stderr, "Usage: %s [--port N] [--verbose]\n", prog);
@@ -33,6 +34,7 @@ int main(int argc, char *argv[]) {
     }
 
     platform_init();
+    telemetry_storage_init();
 
     Server *srv = server_create(port, verbose);
     if (!srv) {

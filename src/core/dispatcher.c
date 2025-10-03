@@ -65,7 +65,48 @@ int dispatcher_handle_request(const CoapMessage *req, CoapMessage *resp) {
 
     LOG_INFO("dispatcher: method=%d path=\"%s\"\n", method, path);
 
-    // Routing simple
+    // === Routing API v1 (Producción) ===
+    if (strcmp(path, "api/v1/telemetry") == 0) {
+        if (method == COAP_METHOD_POST) {
+            return handle_telemetry_post(req, resp);
+        } else if (method == COAP_METHOD_GET) {
+            return handle_telemetry_get(req, resp);
+        } else {
+            LOG_WARN("dispatcher: 405 Method Not Allowed for /api/v1/telemetry (method=%d)\n", method);
+            resp->code = COAP_ERROR_METHOD_NOT_ALLOWED;
+            return 0;
+        }
+    }
+    
+    if (strcmp(path, "api/v1/health") == 0) {
+        if (method != COAP_METHOD_GET) {
+            LOG_WARN("dispatcher: 405 Method Not Allowed for /api/v1/health (method=%d)\n", method);
+            resp->code = COAP_ERROR_METHOD_NOT_ALLOWED;
+            return 0;
+        }
+        return handle_health(req, resp);
+    }
+    
+    if (strcmp(path, "api/v1/status") == 0) {
+        if (method != COAP_METHOD_GET) {
+            LOG_WARN("dispatcher: 405 Method Not Allowed for /api/v1/status (method=%d)\n", method);
+            resp->code = COAP_ERROR_METHOD_NOT_ALLOWED;
+            return 0;
+        }
+        return handle_status(req, resp);
+    }
+
+    // === Routing de Testing ===
+    if (strcmp(path, "test/echo") == 0) {
+        if (method != COAP_METHOD_POST) {
+            LOG_WARN("dispatcher: 405 Method Not Allowed for /test/echo (method=%d)\n", method);
+            resp->code = COAP_ERROR_METHOD_NOT_ALLOWED;
+            return 0;
+        }
+        return handle_test_echo(req, resp);
+    }
+
+    // === Routing Legacy (deprecado, mantener para compatibilidad) ===
     if (strcmp(path, "hello") == 0) {
         if (method != COAP_METHOD_GET) {
             LOG_WARN("dispatcher: 405 Method Not Allowed for /hello (method=%d)\n", method);
@@ -73,14 +114,18 @@ int dispatcher_handle_request(const CoapMessage *req, CoapMessage *resp) {
             return 0;
         }
         return handle_hello(req, resp);
-    } else if (strcmp(path, "time") == 0) {
+    }
+    
+    if (strcmp(path, "time") == 0) {
         if (method != COAP_METHOD_GET) {
             LOG_WARN("dispatcher: 405 Method Not Allowed for /time (method=%d)\n", method);
             resp->code = COAP_ERROR_METHOD_NOT_ALLOWED;
             return 0;
         }
         return handle_time(req, resp);
-    } else if (strcmp(path, "echo") == 0) {
+    }
+    
+    if (strcmp(path, "echo") == 0) {
         if (method != COAP_METHOD_POST) {
             LOG_WARN("dispatcher: 405 Method Not Allowed for /echo (method=%d)\n", method);
             resp->code = COAP_ERROR_METHOD_NOT_ALLOWED;
