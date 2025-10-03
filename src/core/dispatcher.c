@@ -1,5 +1,6 @@
 #include "dispatcher.h"
 #include "handlers.h"
+#include "log.h"
 #include <string.h>
 
 static void init_response_from_request(const CoapMessage *req, CoapMessage *resp) {
@@ -29,9 +30,20 @@ static int method_from_code(CoapCode code) {
 }
 
 int dispatcher_handle_request(const CoapMessage *req, CoapMessage *resp) {
-    if (!req || !resp) return -1;
-    if (!coap_message_is_valid(req)) return -1;
-    if (!coap_message_is_request(req)) return -1;
+    if (!req || !resp) {
+        LOG_ERROR("dispatcher: NULL pointer (req=%p, resp=%p)\n", (void*)req, (void*)resp);
+        return -1;
+    }
+    if (!coap_message_is_valid(req)) {
+        LOG_ERROR("dispatcher: invalid message (version=%u, type=%u, token_len=%u)\n",
+                  req->version, req->type, req->token_length);
+        return -1;
+    }
+    if (!coap_message_is_request(req)) {
+        LOG_ERROR("dispatcher: not a request (code=%u, class=%u)\n",
+                  req->code, coap_code_class(req->code));
+        return -1;
+    }
 
     init_response_from_request(req, resp);
 
