@@ -35,8 +35,21 @@ static void process_datagram(Server *srv,
     CoapMessage resp; coap_message_init(&resp);
     rc = dispatcher_handle_request(&req, &resp);
     if (rc != 0) {
-        if (srv->verbose) LOG_WARN("dispatcher error %d\n", rc);
-        return;
+        if (srv->verbose) LOG_WARN("dispatcher error %d, sending 4.00 Bad Request\n", rc);
+        // Construir respuesta de error mínima
+        coap_message_init(&resp);
+        resp.version = COAP_VERSION;
+        resp.message_id = req.message_id;
+        resp.token_length = req.token_length;
+        if (req.token_length > 0) {
+            memcpy(resp.token, req.token, req.token_length);
+        }
+        if (req.type == COAP_TYPE_CONFIRMABLE) {
+            resp.type = COAP_TYPE_ACKNOWLEDGMENT;
+        } else {
+            resp.type = COAP_TYPE_NON_CONFIRMABLE;
+        }
+        resp.code = COAP_ERROR_BAD_REQUEST;
     }
 
     uint8_t out[SEND_BUFFER_SIZE];

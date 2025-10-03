@@ -40,8 +40,8 @@ int dispatcher_handle_request(const CoapMessage *req, CoapMessage *resp) {
         return -1;
     }
     if (!coap_message_is_request(req)) {
-        LOG_ERROR("dispatcher: not a request (code=%u, class=%u)\n",
-                  req->code, coap_code_class(req->code));
+        LOG_ERROR("dispatcher: not a request (code=%u, class=%u, detail=%u)\n",
+                  req->code, coap_code_class(req->code), coap_code_detail(req->code));
         return -1;
     }
 
@@ -51,31 +51,38 @@ int dispatcher_handle_request(const CoapMessage *req, CoapMessage *resp) {
     char path[128];
     int path_len = coap_message_get_uri_path(req, path, sizeof(path));
     if (path_len < 0) {
+        LOG_WARN("dispatcher: failed to extract uri_path\n");
         resp->code = COAP_ERROR_BAD_REQUEST;
         return 0;
     }
 
     int method = method_from_code(req->code);
     if (method == 0) {
+        LOG_WARN("dispatcher: invalid method (code=%u)\n", req->code);
         resp->code = COAP_ERROR_BAD_REQUEST;
         return 0;
     }
 
+    LOG_INFO("dispatcher: method=%d path=\"%s\"\n", method, path);
+
     // Routing simple
     if (strcmp(path, "hello") == 0) {
         if (method != COAP_METHOD_GET) {
+            LOG_WARN("dispatcher: 405 Method Not Allowed for /hello (method=%d)\n", method);
             resp->code = COAP_ERROR_METHOD_NOT_ALLOWED;
             return 0;
         }
         return handle_hello(req, resp);
     } else if (strcmp(path, "time") == 0) {
         if (method != COAP_METHOD_GET) {
+            LOG_WARN("dispatcher: 405 Method Not Allowed for /time (method=%d)\n", method);
             resp->code = COAP_ERROR_METHOD_NOT_ALLOWED;
             return 0;
         }
         return handle_time(req, resp);
     } else if (strcmp(path, "echo") == 0) {
         if (method != COAP_METHOD_POST) {
+            LOG_WARN("dispatcher: 405 Method Not Allowed for /echo (method=%d)\n", method);
             resp->code = COAP_ERROR_METHOD_NOT_ALLOWED;
             return 0;
         }
@@ -83,6 +90,7 @@ int dispatcher_handle_request(const CoapMessage *req, CoapMessage *resp) {
     }
 
     // No encontrado
+    LOG_WARN("dispatcher: 404 Not Found for path=\"%s\"\n", path);
     resp->code = COAP_ERROR_NOT_FOUND;
     return 0;
 }

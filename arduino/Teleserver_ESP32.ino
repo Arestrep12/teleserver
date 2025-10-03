@@ -120,9 +120,8 @@ int buildCoapPostEcho(uint8_t* pkt, uint16_t mid, const char* payload) {
   pkt[n++] = (uint8_t)( mid       & 0xFF);
   uint16_t prev = 0;
   n += addUriPath(pkt + n, prev, "echo"); prev = 11;
-  // Content-Format (12): text/plain (0) => delta=1, len=1, value=0x00
-  pkt[n++] = (uint8_t)((1 << 4) | 1);
-  pkt[n++] = 0x00;
+  // Content-Format (12): text/plain (0) => delta=1, len=0 (RFC7252: 0 se codifica con longitud 0)
+  pkt[n++] = (uint8_t)((1 << 4) | 0);
   // payload
   pkt[n++] = 0xFF;
   size_t plen = strlen(payload);
