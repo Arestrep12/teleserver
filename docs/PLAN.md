@@ -37,8 +37,6 @@ Checklist de progreso
 - [x] Fase 7: Servidor UDP principal (integración)
 - [x] Fase 8: Cliente CoAP mínimo (CLI)
 - [x] Fase 9: Logging y observabilidad
-- [ ] Fase 8: Cliente CoAP mínimo (CLI)
-- [ ] Fase 9: Logging y observabilidad
 - [ ] Fase 10: Calidad de código y seguridad
 - [ ] Fase 11: Documentación
 - [ ] Fase 12: CI (macOS/Linux) y cobertura básica

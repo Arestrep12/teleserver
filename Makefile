@@ -1,7 +1,7 @@
 # Makefile para TeleServer
 
 CC := clang
-CFLAGS_BASE := -std=c11 -Wall -Wextra -Werror -Iinclude
+CFLAGS_BASE := -std=c11 -Wall -Wextra -Werror -Iinclude -I../TeleClient/include -pthread
 CFLAGS_DEBUG := $(CFLAGS_BASE) -g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer -DDEBUG
 CFLAGS_RELEASE := $(CFLAGS_BASE) -O2 -DNDEBUG
 
@@ -17,6 +17,10 @@ TEST_DIR := tests
 BIN_DIR := bin
 BUILD_DIR := build
 BUILD_TEST_DIR := $(BUILD_DIR)/tests
+
+# TeleClient (para pruebas de extremo a extremo)
+CLIENT_DIR := ../TeleClient
+CLIENT_SRC := $(CLIENT_DIR)/src/client/client.c
 
 # Archivos fuente
 SRCS_ALL := $(shell find $(SRC_DIR) -name '*.c')
@@ -76,7 +80,7 @@ test: $(TEST_BINS)
 
 $(BUILD_TEST_DIR)/test_%: $(TEST_DIR)/test_%.c $(SRCS_LIB)
 	@mkdir -p $(BUILD_TEST_DIR)
-	$(CC) $(CFLAGS_DEBUG) -o $@ $< $(SRCS_LIB)
+	$(CC) $(CFLAGS_DEBUG) -o $@ $< $(SRCS_LIB) $(CLIENT_SRC)
 
 # Linting
 lint:
