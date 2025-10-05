@@ -1,6 +1,6 @@
 # TeleServer - Cambios para Producción
 
-## ✅ Implementado
+## Implementado
 
 ### Arquitectura (Alta Cohesión / Bajo Acoplamiento)
 
@@ -25,7 +25,7 @@
 - Formateo de peer address (IPv4/IPv6)
 - Logs de entrada/salida en verbose mode
 
-## 📡 Rutas API v1
+## Rutas API v1
 
 ### Producción
 | Método | Ruta | Descripción |
@@ -47,7 +47,7 @@
 | `GET` | `/time` | Timestamp actual |
 | `POST` | `/echo` | Echo (usar /test/echo) |
 
-## 🚀 Despliegue
+## Despliegue
 
 ### 1. Compilar Servidor (Release)
 ```bash
@@ -135,7 +135,7 @@ cd /Users/alejo/Code/TeleClient
 ]
 ```
 
-## 📝 Logs Esperados (Servidor con --verbose)
+## Logs Esperados (Servidor con --verbose)
 
 ```
 [INFO] TeleServer running on UDP/5683
@@ -159,7 +159,7 @@ cd /Users/alejo/Code/TeleClient
 [INFO] TX 2.05 Content to 10.0.0.50:54321 mid=5678 payload=2543B
 ```
 
-## 🔍 Testing
+## Testing
 
 ### Tests Unitarios
 ```bash
@@ -187,7 +187,7 @@ Todos los tests existentes pasaron. Los nuevos handlers son compatibles con la i
    ./bin/tele_client localhost:5683 GET /api/v1/telemetry
    ```
 
-## 📁 Archivos Nuevos/Modificados
+## Archivos Nuevos/Modificados
 
 ### Nuevos
 - `include/telemetry_storage.h`
@@ -205,7 +205,7 @@ Todos los tests existentes pasaron. Los nuevos handlers son compatibles con la i
 - `src/log.c` - Implementación de logs CoAP
 - `CAMBIOS_DIAGNOSTICO.md` - Actualizado
 
-## 🔒 Seguridad
+## Seguridad
 
 **Estado actual:** Sin autenticación/encriptación
 - Adecuado para red privada/VPC
@@ -217,7 +217,7 @@ Todos los tests existentes pasaron. Los nuevos handlers son compatibles con la i
 - Rate limiting
 - Firewall/Security Groups configurados
 
-## 🎯 Próximos Pasos
+## Próximos Pasos
 
 1. **Persistencia:** Guardar en base de datos (SQLite/PostgreSQL)
 2. **Dashboard:** Visualización web de telemetría
@@ -225,14 +225,14 @@ Todos los tests existentes pasaron. Los nuevos handlers son compatibles con la i
 4. **Compresión:** CBOR en lugar de JSON
 5. **Autenticación:** Tokens para ESP32 y TeleClient
 
-## 📚 Documentación
+## Documentación
 
 Ver documentación completa en:
 - `docs/API_V1.md` - Especificación completa de la API
 - `docs/modules/` - Documentación de cada módulo
 - `README.md` - Overview general del proyecto
 
-## ✅ Checklist de Producción
+## Checklist de Producción
 
 - [x] Arquitectura modular implementada
 - [x] Ring buffer de 100 entradas
