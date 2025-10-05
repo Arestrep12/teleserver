@@ -234,10 +234,3 @@ cd ../TeleClient
 make test
 ```
 
-## Próximos Pasos
-
-1. **Persistencia:** Guardar JSON en base de datos (SQLite, PostgreSQL)
-2. **Autenticación:** Agregar tokens/API keys
-3. **Compresión:** CBOR en lugar de JSON para reducir bandwidth
-4. **Observability:** Métricas (Prometheus), tracing
-5. **Multicast:** Soporte para CoAP Observe (subscripciones)

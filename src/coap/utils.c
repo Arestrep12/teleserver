@@ -1,6 +1,15 @@
+/*
+ * utils.c — Utilidades de CoAP: strings de tipos/códigos/opciones y helpers
+ * de construcción/validación de mensajes.
+ */
 #include "coap.h"
 #include <string.h>
 
+/*
+ * coap_type_to_string
+ * -------------------
+ * Devuelve una representación legible del tipo de mensaje.
+ */
 const char *coap_type_to_string(CoapType type) {
     switch (type) {
         case COAP_TYPE_CONFIRMABLE: return "CON";
@@ -11,6 +20,11 @@ const char *coap_type_to_string(CoapType type) {
     }
 }
 
+/*
+ * coap_code_to_string
+ * -------------------
+ * Traduce métodos y códigos de respuesta CoAP a cadena.
+ */
 const char *coap_code_to_string(CoapCode code) {
     switch (code) {
         case COAP_METHOD_GET: return "GET";
@@ -32,6 +46,11 @@ const char *coap_code_to_string(CoapCode code) {
     }
 }
 
+/*
+ * coap_option_to_string
+ * ---------------------
+ * Representación textual de opciones comunes utilizadas por el servidor.
+ */
 const char *coap_option_to_string(uint16_t option_number) {
     switch (option_number) {
         case COAP_OPTION_URI_PATH: return "Uri-Path";
@@ -42,18 +61,38 @@ const char *coap_option_to_string(uint16_t option_number) {
     }
 }
 
+/*
+ * coap_code_class
+ * ---------------
+ * Extrae la clase (bits altos) del código CoAP.
+ */
 uint8_t coap_code_class(CoapCode code) {
     return (uint8_t)((code >> 5) & 0x07);
 }
 
+/*
+ * coap_code_detail
+ * ----------------
+ * Extrae el detalle (bits bajos) del código CoAP.
+ */
 uint8_t coap_code_detail(CoapCode code) {
     return (uint8_t)(code & 0x1F);
 }
 
+/*
+ * coap_make_code
+ * --------------
+ * Construye un código CoAP a partir de clase y detalle.
+ */
 CoapCode coap_make_code(uint8_t class_code, uint8_t detail) {
     return (CoapCode)((class_code << 5) | (detail & 0x1F));
 }
 
+/*
+ * coap_message_init
+ * ------------------
+ * Inicializa un CoapMessage con valores por defecto seguros.
+ */
 void coap_message_init(CoapMessage *msg) {
     if (!msg) return;
     memset(msg, 0, sizeof(CoapMessage));
@@ -61,11 +100,23 @@ void coap_message_init(CoapMessage *msg) {
     msg->type = COAP_TYPE_CONFIRMABLE;
 }
 
+/*
+ * coap_message_clear
+ * ------------------
+ * Limpia/zera toda la estructura CoapMessage.
+ */
 void coap_message_clear(CoapMessage *msg) {
     if (!msg) return;
     memset(msg, 0, sizeof(CoapMessage));
 }
 
+/*
+ * coap_message_add_option
+ * -----------------------
+ * Inserta una opción manteniendo orden por número. Valida límites de longitud.
+ *
+ * Retorna 0 en éxito; -1 en caso de overflow o parámetros inválidos.
+ */
 int coap_message_add_option(CoapMessage *msg, uint16_t number,
                             const uint8_t *value, size_t length) {
     if (!msg || msg->option_count >= (sizeof msg->options / sizeof msg->options[0])) {
@@ -97,6 +148,11 @@ int coap_message_add_option(CoapMessage *msg, uint16_t number,
     return 0;
 }
 
+/*
+ * coap_message_find_option
+ * ------------------------
+ * Busca una opción por número exacto. Retorna puntero o NULL si no existe.
+ */
 const CoapOptionDef *coap_message_find_option(const CoapMessage *msg, uint16_t number) {
     if (!msg) return NULL;
     for (size_t i = 0; i < msg->option_count; i++) {
@@ -107,6 +163,14 @@ const CoapOptionDef *coap_message_find_option(const CoapMessage *msg, uint16_t n
     return NULL;
 }
 
+/*
+ * coap_message_get_uri_path
+ * -------------------------
+ * Reconstruye el Uri-Path concatenando segmentos (opción 11) separados por '/'.
+ * Escribe en 'buffer' hasta buffer_size-1 y siempre termina en '\0'.
+ *
+ * Retorna longitud escrita (sin contar NUL) o <0 en error.
+ */
 int coap_message_get_uri_path(const CoapMessage *msg, char *buffer, size_t buffer_size) {
     if (!msg || !buffer || buffer_size == 0) {
         return -1;
@@ -137,6 +201,12 @@ int coap_message_get_uri_path(const CoapMessage *msg, char *buffer, size_t buffe
     return (int)offset;
 }
 
+/*
+ * coap_message_is_valid
+ * ---------------------
+ * Valida propiedades básicas del mensaje (versión, tipo, token, orden de
+ * opciones). No garantiza semántica de aplicación.
+ */
 bool coap_message_is_valid(const CoapMessage *msg) {
     if (!msg) return false;
     if (msg->version != COAP_VERSION) return false;
@@ -151,12 +221,22 @@ bool coap_message_is_valid(const CoapMessage *msg) {
     return true;
 }
 
+/*
+ * coap_message_is_request
+ * -----------------------
+ * Retorna true si el código pertenece a la clase de métodos (0.xx y no 0.00).
+ */
 bool coap_message_is_request(const CoapMessage *msg) {
     if (!msg) return false;
     uint8_t cls = coap_code_class(msg->code);
     return cls == 0 && msg->code != 0;
 }
 
+/*
+ * coap_message_is_response
+ * ------------------------
+ * Retorna true si el código pertenece a las clases 2.xx a 5.xx.
+ */
 bool coap_message_is_response(const CoapMessage *msg) {
     if (!msg) return false;
     uint8_t cls = coap_code_class(msg->code);

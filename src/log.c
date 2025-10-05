@@ -1,3 +1,9 @@
+/*
+ * log.c — Utilidades de logging con niveles y helpers específicos de CoAP.
+ *
+ * Permite redirigir salida y controlar el nivel. Incluye funciones para
+ * formatear endpoints y registrar RX/TX de CoAP con información relevante.
+ */
 #include "log.h"
 
 #include <time.h>
@@ -11,14 +17,29 @@
 static LogLevel g_level = LOG_LEVEL_INFO; // por defecto: INFO
 static FILE *g_stream = NULL;             // NULL => usar stderr
 
+/*
+ * log_set_level
+ * -------------
+ * Establece el nivel mínimo que será impreso por log_printf.
+ */
 void log_set_level(LogLevel level) {
     g_level = level;
 }
 
+/*
+ * log_set_stream
+ * --------------
+ * Redirige la salida de logs a 'stream'. Si es NULL, se usa stderr.
+ */
 void log_set_stream(FILE *stream) {
     g_stream = stream;
 }
 
+/*
+ * level_to_str
+ * ------------
+ * Mapea LogLevel a etiqueta textual.
+ */
 static const char *level_to_str(LogLevel lvl) {
     switch (lvl) {
         case LOG_LEVEL_ERROR: return "ERROR";
@@ -29,6 +50,12 @@ static const char *level_to_str(LogLevel lvl) {
     }
 }
 
+/*
+ * log_printf
+ * ----------
+ * Imprime un mensaje con prefijo de nivel si 'level' es >= g_level. Acepta
+ * formato printf y argumentos variables.
+ */
 void log_printf(LogLevel level, const char *fmt, ...) {
     if (level > g_level) return;
     FILE *out = g_stream ? g_stream : stderr;
@@ -42,6 +69,11 @@ void log_printf(LogLevel level, const char *fmt, ...) {
     va_end(ap);
 }
 
+/*
+ * format_sockaddr
+ * ----------------
+ * Convierte una sockaddr (IPv4/IPv6) a la forma "ip:puerto" para logs.
+ */
 static void format_sockaddr(const struct sockaddr *sa, socklen_t sa_len,
                             char *out, size_t out_size) {
     if (!sa || !out || out_size == 0) return;
@@ -67,6 +99,12 @@ static void format_sockaddr(const struct sockaddr *sa, socklen_t sa_len,
     }
 }
 
+/*
+ * log_coap_rx
+ * -----------
+ * Registra un request CoAP recibido: método, ruta, peer, MID, TKL y tamaño de
+ * payload. Requiere msg != NULL.
+ */
 void log_coap_rx(const CoapMessage *msg, const struct sockaddr *peer, socklen_t peer_len) {
     if (!msg) return;
     char peer_str[64]; format_sockaddr(peer, peer_len, peer_str, sizeof(peer_str));
@@ -80,6 +118,12 @@ void log_coap_rx(const CoapMessage *msg, const struct sockaddr *peer, socklen_t 
                msg->payload_length);
 }
 
+/*
+ * log_coap_tx
+ * -----------
+ * Registra una respuesta CoAP enviada (sólo clases 2.xx): código, peer, MID y
+ * tamaño de payload. Requiere msg != NULL.
+ */
 void log_coap_tx(const CoapMessage *msg, const struct sockaddr *peer, socklen_t peer_len) {
     if (!msg) return;
     if (coap_code_class(msg->code) != 2) return; // solo éxitos 2.xx

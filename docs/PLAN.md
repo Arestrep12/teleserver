@@ -5,7 +5,7 @@ un servidor CoAP concurrente en C sobre UDP, conforme a las reglas de WARP.md.
 
 Fuentes de verdad:
 - WARP.md (arquitectura, reglas C, comandos de desarrollo y despliegue)
-- Este documento (plan operativo, checklist, estado y próximos pasos)
+- Este documento (plan operativo, checklist, estado)
 
 Principios y restricciones
 - Solo API POSIX de sockets (sin librerías de terceros para CoAP ni frameworks)
@@ -24,7 +24,6 @@ Estado actual (2025-09-29)
 - Fase 8 (Cliente CoAP mínimo — CLI): COMPLETADA
 - Fase 9 (Logging y observabilidad): COMPLETADA
 - Fase 0 (Kickoff y convenciones): COMPLETADA
-- Próximo paso recomendado: Fase 10 (Calidad de código y seguridad)
 
 Checklist de progreso
 - [x] Fase 0: Kickoff y convenciones
@@ -37,12 +36,6 @@ Checklist de progreso
 - [x] Fase 7: Servidor UDP principal (integración)
 - [x] Fase 8: Cliente CoAP mínimo (CLI)
 - [x] Fase 9: Logging y observabilidad
-- [ ] Fase 10: Calidad de código y seguridad
-- [ ] Fase 11: Documentación
-- [ ] Fase 12: CI (macOS/Linux) y cobertura básica
-- [ ] Fase 13: Empaquetado y despliegue en AWS
-- [ ] Fase 14: Pruebas de carga y robustez
-- [ ] Fase 15: Hardening y backlog
 
 ---
 
@@ -148,53 +141,6 @@ Entregables
 Verificación
 - Logs limpios; niveles respetados; silencioso en release
 
-Fase 10 — Calidad de código y seguridad
-Objetivo
-- Linting, formateo, sanitizers y revisiones de seguridad C
-Entregables
-- make lint/format; correcciones
-Verificación
-- clang-tidy/cppcheck sin findings críticos; valgrind (Linux) sin leaks
-
-Fase 11 — Documentación
-Objetivo
-- Documentar arquitectura y perfil "CoAP personalizado"
-Entregables
-- docs/architecture.md; docs/coap-profile.md; README actualizado
-Verificación
-- Cualquier colaborador puede compilar/ejecutar/probar
-
-Fase 12 — CI (GitHub Actions) y cobertura básica
-Objetivo
-- Automatizar build/test/lint en macOS/Linux
-Entregables
-- .github/workflows/ci.yml
-Verificación
-- Pipelines verdes; bloqueo de merge si falla build/test
-
-Fase 13 — Empaquetado y despliegue en AWS
-Objetivo
-- Build en Amazon Linux 2; service systemd; SG UDP/5683
-Entregables
-- Guía de build; unit file systemd; guía de SG
-Verificación
-- Responde a GET/POST desde red autorizada
-
-Fase 14 — Pruebas de carga y robustez
-Objetivo
-- Validar concurrencia y pérdida de paquetes
-Entregables
-- Script/binario de carga (cliente en loop)
-Verificación
-- Estabilidad sin crash; latencias razonables
-
-Fase 15 — Hardening y backlog
-Objetivo
-- Revisar límites, validaciones y trazar roadmap (blockwise, Observe, métricas)
-Entregables
-- Lista de mejoras/prioridades
-Verificación
-- Inputs malformados no tumban el servidor
 
 ---
 
@@ -204,5 +150,3 @@ Riesgos y mitigaciones
 - Portabilidad: limitarse a C11/POSIX; rutas separadas por OS (kqueue/epoll)
 - Seguridad: validar tamaños y punteros; no confiar en input de red; sin UB
 
-Próximo paso sugerido
-- Implementar Fase 8 (Cliente CoAP mínimo — CLI) y sus pruebas; luego continuar con Fase 9 (Logging y observabilidad).

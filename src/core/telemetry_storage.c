@@ -1,3 +1,11 @@
+/*
+ * telemetry_storage.c — Ring buffer en memoria para JSON de telemetría.
+ *
+ * Características
+ * - Capacidad fija (TELEMETRY_MAX_ENTRIES) con inserción circular.
+ * - Cada entrada conserva el JSON (texto) y un timestamp en ms.
+ * - API sin dependencias de CoAP.
+ */
 #include "telemetry_storage.h"
 #include "time_source.h"
 #include <string.h>
@@ -14,10 +22,22 @@ typedef struct {
 
 static TelemetryStorage g_storage = {0};
 
+/*
+ * telemetry_storage_init
+ * ----------------------
+ * Inicializa/zera el estado interno del almacenamiento.
+ */
 void telemetry_storage_init(void) {
     memset(&g_storage, 0, sizeof(g_storage));
 }
 
+/*
+ * telemetry_storage_add
+ * ---------------------
+ * Inserta un JSON crudo en el ring buffer asignando timestamp actual.
+ *
+ * Retorna 0 en éxito; negativo en error (longitud inválida o args nulos).
+ */
 int telemetry_storage_add(const char *json, size_t json_len) {
     if (!json || json_len == 0) return -1;
     if (json_len >= TELEMETRY_MAX_JSON_SIZE) return -2;
@@ -40,6 +60,12 @@ int telemetry_storage_add(const char *json, size_t json_len) {
     return 0;
 }
 
+/*
+ * telemetry_storage_get_all
+ * -------------------------
+ * Copia hasta max_entries elementos en 'out' en orden cronológico (antiguo →
+ * reciente). Devuelve la cantidad copiada.
+ */
 size_t telemetry_storage_get_all(TelemetryEntry *out, size_t max_entries) {
     if (!out || max_entries == 0) return 0;
 
@@ -63,6 +89,11 @@ size_t telemetry_storage_get_all(TelemetryEntry *out, size_t max_entries) {
     return copy_count;
 }
 
+/*
+ * telemetry_storage_get_stats
+ * ---------------------------
+ * Lee métricas básicas del almacenamiento.
+ */
 void telemetry_storage_get_stats(TelemetryStats *stats) {
     if (!stats) return;
     stats->total_received = g_storage.total_received;
@@ -71,6 +102,11 @@ void telemetry_storage_get_stats(TelemetryStats *stats) {
     stats->last_received_ms = g_storage.last_received_ms;
 }
 
+/*
+ * telemetry_storage_clear
+ * -----------------------
+ * Limpia el contenido del ring buffer.
+ */
 void telemetry_storage_clear(void) {
     g_storage.head = 0;
     g_storage.count = 0;
@@ -78,6 +114,12 @@ void telemetry_storage_clear(void) {
     g_storage.last_received_ms = 0;
 }
 
+/*
+ * telemetry_storage_serialize_json
+ * --------------------------------
+ * Serializa todas las entradas en un arreglo JSON sin dependencias externas.
+ * Retorna longitud escrita o negativo en error.
+ */
 int telemetry_storage_serialize_json(char *out, size_t out_size) {
     if (!out || out_size == 0) return -1;
 

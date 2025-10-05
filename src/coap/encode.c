@@ -1,6 +1,17 @@
+/*
+ * encode.c — Codificación de mensajes CoAP (RFC 7252, perfil mínimo).
+ *
+ * Verifica validez del mensaje (token, orden de opciones y límites) antes de
+ * serializar. Implementa extensiones 13/14 para delta/length y payload marker.
+ */
 #include "coap_codec.h"
 #include <string.h>
 
+/*
+ * options_are_ordered
+ * -------------------
+ * Comprueba que la lista de opciones esté ordenada por número ascendente.
+ */
 static bool options_are_ordered(const CoapMessage *msg) {
 	if (!msg) return false;
 	for (size_t i = 1; i < msg->option_count; i++) {
@@ -9,6 +20,11 @@ static bool options_are_ordered(const CoapMessage *msg) {
 	return true;
 }
 
+/*
+ * coap_message_can_encode
+ * -----------------------
+ * Valida que un CoapMessage es codificable según los límites del proyecto.
+ */
 bool coap_message_can_encode(const CoapMessage *msg) {
 	if (!msg) return false;
 	if (msg->version != COAP_VERSION) return false;
@@ -22,6 +38,12 @@ bool coap_message_can_encode(const CoapMessage *msg) {
 	return true;
 }
 
+/*
+ * write_extended
+ * --------------
+ * Serializa el valor extendido para delta/length, devolviendo el nibble
+ * resultante y escribiendo los bytes extra cuando corresponda.
+ */
 static int write_extended(uint32_t value,
                           uint8_t **p, uint8_t *end, uint8_t *out_nibble) {
 	// value ya calculado (delta o length).
@@ -50,6 +72,12 @@ static int write_extended(uint32_t value,
 	return COAP_CODEC_EOPTIONS; // Demasiado grande para representarse
 }
 
+/*
+ * coap_encode
+ * -----------
+ * Serializa un CoapMessage a un buffer. Retorna la cantidad de bytes escritos o
+ * un código COAP_CODEC_E* en error (buffer pequeño, mensaje inválido, etc.).
+ */
 int coap_encode(const CoapMessage *msg, uint8_t *out, size_t out_size) {
 	if (!msg || !out) return COAP_CODEC_EINVAL;
 	if (!coap_message_can_encode(msg)) return COAP_CODEC_EINVAL;

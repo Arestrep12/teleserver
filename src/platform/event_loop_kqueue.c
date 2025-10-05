@@ -1,5 +1,11 @@
 #if defined(__APPLE__) && defined(__MACH__)
 
+/*
+ * event_loop_kqueue.c — Implementación de EventLoop usando kqueue (macOS).
+ *
+ * Proporciona una API uniforme (event_loop_*) para registro de FDs, timers,
+ * ejecución del bucle y parada cooperativa.
+ */
 #include "event_loop.h"
 #include "platform.h"
 #include <sys/event.h>
@@ -39,6 +45,14 @@ struct EventLoop {
 	int next_timer_id;
 };
 
+/*
+ * compute_timespec_for_wait
+ * -------------------------
+ * Calcula el timeout de espera para kevent considerando:
+ * - timers activos (próximo disparo)
+ * - timeout solicitado para la ejecución (modo single-iteration)
+ * Devuelve el timespec efectivo y un puntero al mismo para pasar a kevent.
+ */
 static void compute_timespec_for_wait(EventLoop *loop, int run_timeout_ms,
                                      struct timespec *out_ts, struct timespec **out_pts) {
 	// Calcula el timeout a usar considerando timers pendientes
@@ -68,6 +82,11 @@ static void compute_timespec_for_wait(EventLoop *loop, int run_timeout_ms,
 	*out_pts = out_ts;
 }
 
+/*
+ * event_loop_create
+ * -----------------
+ * Crea y prepara una instancia EventLoop basada en kqueue.
+ */
 EventLoop *event_loop_create(void) {
 	EventLoop *loop = (EventLoop *)calloc(1, sizeof(EventLoop));
 	if (!loop) return NULL;
@@ -81,12 +100,23 @@ EventLoop *event_loop_create(void) {
 	return loop;
 }
 
+/*
+ * event_loop_destroy
+ * ------------------
+ * Cierra el descriptor kqueue y libera memoria del EventLoop.
+ */
 void event_loop_destroy(EventLoop *loop) {
 	if (!loop) return;
 	if (loop->kqueue_fd >= 0) close(loop->kqueue_fd);
 	free(loop);
 }
 
+/*
+ * event_loop_add_fd
+ * -----------------
+ * Registra un descriptor de archivo con interés en lectura/escritura.
+ * user_data será pasado al callback cuando haya eventos.
+ */
 int event_loop_add_fd(EventLoop *loop, int fd, EventType events,
                       EventCallback callback, void *user_data) {
 	if (!loop || fd < 0 || fd >= MAX_FDS || !callback) return PLATFORM_EINVAL;
@@ -109,6 +139,11 @@ int event_loop_add_fd(EventLoop *loop, int fd, EventType events,
 	return PLATFORM_OK;
 }
 
+/*
+ * event_loop_remove_fd
+ * --------------------
+ * Elimina el registro de un descriptor previamente agregado.
+ */
 int event_loop_remove_fd(EventLoop *loop, int fd) {
 	if (!loop || fd < 0 || fd >= MAX_FDS) return PLATFORM_EINVAL;
 	FdHandler *h = &loop->handlers[fd];
@@ -123,6 +158,11 @@ int event_loop_remove_fd(EventLoop *loop, int fd) {
 	return PLATFORM_OK;
 }
 
+/*
+ * event_loop_modify_fd
+ * --------------------
+ * Actualiza los intereses (lectura/escritura) de un descriptor activo.
+ */
 int event_loop_modify_fd(EventLoop *loop, int fd, EventType events) {
 	if (!loop || fd < 0 || fd >= MAX_FDS) return PLATFORM_EINVAL;
 	FdHandler *h = &loop->handlers[fd];
@@ -133,6 +173,12 @@ int event_loop_modify_fd(EventLoop *loop, int fd, EventType events) {
 	return event_loop_add_fd(loop, fd, events, h->callback, h->user_data);
 }
 
+/*
+ * event_loop_add_timer
+ * --------------------
+ * Crea un timer interno (no de kqueue) gestionado por el bucle. Soporta timers
+ * one-shot y periódicos. Retorna un ID (>0) o -1 si no hay espacio.
+ */
 int event_loop_add_timer(EventLoop *loop, uint64_t timeout_ms,
                          bool periodic, TimerCallback callback, void *user_data) {
 	if (!loop || !callback) return -1;
@@ -151,6 +197,11 @@ int event_loop_add_timer(EventLoop *loop, uint64_t timeout_ms,
 	return -1;
 }
 
+/*
+ * event_loop_remove_timer
+ * -----------------------
+ * Desactiva un timer previamente agregado.
+ */
 void event_loop_remove_timer(EventLoop *loop, int timer_id) {
 	if (!loop) return;
 	for (int i = 0; i < MAX_TIMERS; i++) {
@@ -161,6 +212,11 @@ void event_loop_remove_timer(EventLoop *loop, int timer_id) {
 	}
 }
 
+/*
+ * process_timers
+ * --------------
+ * Recorre timers activos, dispara callbacks vencidos y reprograma los periódicos.
+ */
 static void process_timers(EventLoop *loop) {
 	uint64_t now = platform_get_time_ms();
 	for (int i = 0; i < MAX_TIMERS; i++) {
@@ -177,6 +233,13 @@ static void process_timers(EventLoop *loop) {
 	}
 }
 
+/*
+ * event_loop_run
+ * --------------
+ * Ejecuta el bucle principal: espera eventos kqueue, despacha callbacks y
+ * procesa timers. Si timeout_ms >= 0, realiza una única iteración con ese
+ * timeout efectivo y retorna.
+ */
 int event_loop_run(EventLoop *loop, int timeout_ms) {
 	if (!loop) return PLATFORM_EINVAL;
 	loop->running = true;
@@ -211,10 +274,20 @@ int event_loop_run(EventLoop *loop, int timeout_ms) {
 	return PLATFORM_OK;
 }
 
+/*
+ * event_loop_stop
+ * ---------------
+ * Señala al bucle para detenerse lo antes posible.
+ */
 void event_loop_stop(EventLoop *loop) {
 	if (loop) loop->running = false;
 }
 
+/*
+ * event_loop_is_running
+ * ---------------------
+ * Indica si el bucle está en ejecución.
+ */
 bool event_loop_is_running(EventLoop *loop) {
 	return loop ? loop->running : false;
 }

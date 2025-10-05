@@ -1,3 +1,10 @@
+/*
+ * handlers.c — Implementación de lógica de endpoints (producción/testing/legacy).
+ *
+ * Las funciones construyen respuestas CoAP completas (code, payload y options).
+ * En errores de negocio devuelven 0 con resp->code en 4.xx/5.xx; sólo retornan
+ * <0 ante errores internos irreparables (p.ej., buffers insuficientes).
+ */
 #include "handlers.h"
 #include "time_source.h"
 #include "telemetry_storage.h"
@@ -5,12 +12,23 @@
 #include <stdio.h>
 #include <string.h>
 
+/*
+ * set_content_format_text
+ * -----------------------
+ * Establece Content-Format: text/plain (0) usando longitud 0 como codificación
+ * del entero 0 según RFC 7252.
+ */
 static int set_content_format_text(CoapMessage *resp) {
     // Content-Format: text/plain (0) => entero 0 codificado como longitud 0
     // (RFC7252: representación de 0 es cadena de longitud 0)
     return coap_message_add_option(resp, COAP_OPTION_CONTENT_FORMAT, NULL, 0);
 }
 
+/*
+ * handle_hello (Legacy)
+ * ---------------------
+ * GET /hello — devuelve "hello" para pruebas básicas de conectividad.
+ */
 int handle_hello(const CoapMessage *req, CoapMessage *resp) {
     (void)req;
     if (!resp) return -1;
@@ -26,6 +44,11 @@ int handle_hello(const CoapMessage *req, CoapMessage *resp) {
     return 0;
 }
 
+/*
+ * handle_time (Legacy)
+ * --------------------
+ * GET /time — devuelve el tiempo actual en ms (inyectable vía time_source).
+ */
 int handle_time(const CoapMessage *req, CoapMessage *resp) {
     (void)req;
     if (!resp) return -1;
@@ -42,6 +65,11 @@ int handle_time(const CoapMessage *req, CoapMessage *resp) {
     return 0;
 }
 
+/*
+ * handle_echo (Legacy)
+ * --------------------
+ * POST /echo — retorna el payload recibido sin modificaciones.
+ */
 int handle_echo(const CoapMessage *req, CoapMessage *resp) {
     if (!req || !resp) return -1;
 
@@ -64,12 +92,23 @@ int handle_echo(const CoapMessage *req, CoapMessage *resp) {
 // Rutas de Producción (API v1)
 // ============================================================================
 
+/*
+ * set_content_format_json
+ * -----------------------
+ * Establece Content-Format: application/json (50).
+ */
 static int set_content_format_json(CoapMessage *resp) {
     // Content-Format: application/json (50) => 1 byte con valor 50
     uint8_t json_fmt = 50;
     return coap_message_add_option(resp, COAP_OPTION_CONTENT_FORMAT, &json_fmt, 1);
 }
 
+/*
+ * is_valid_json
+ * -------------
+ * Validación ligera específica del proyecto: requiere llaves y presencia de
+ * cuatro campos obligatorios. No valida tipos ni estructura detallada.
+ */
 static bool is_valid_json(const char *str, size_t len) {
     // Validación básica: debe empezar con '{' y terminar con '}'
     if (len < 2) return false;
@@ -82,6 +121,15 @@ static bool is_valid_json(const char *str, size_t len) {
     return true;
 }
 
+/*
+ * handle_telemetry_post
+ * ---------------------
+ * POST /api/v1/telemetry — almacena el JSON recibido en el ring buffer.
+ * Respuestas:
+ * - 2.01 Created en éxito
+ * - 4.00 Bad Request en JSON inválido o sin payload
+ * - 5.00 Internal Server Error si falla el almacenamiento
+ */
 int handle_telemetry_post(const CoapMessage *req, CoapMessage *resp) {
     if (!req || !resp) return -1;
 
@@ -136,6 +184,11 @@ int handle_telemetry_post(const CoapMessage *req, CoapMessage *resp) {
     return 0;
 }
 
+/*
+ * handle_telemetry_get
+ * --------------------
+ * GET /api/v1/telemetry — retorna todas las entradas en un arreglo JSON.
+ */
 int handle_telemetry_get(const CoapMessage *req, CoapMessage *resp) {
     (void)req;
     if (!resp) return -1;
@@ -164,6 +217,11 @@ int handle_telemetry_get(const CoapMessage *req, CoapMessage *resp) {
     return 0;
 }
 
+/*
+ * handle_health
+ * -------------
+ * GET /api/v1/health — health check simple del servicio.
+ */
 int handle_health(const CoapMessage *req, CoapMessage *resp) {
     (void)req;
     if (!resp) return -1;
@@ -179,6 +237,11 @@ int handle_health(const CoapMessage *req, CoapMessage *resp) {
     return 0;
 }
 
+/*
+ * handle_status
+ * -------------
+ * GET /api/v1/status — estadísticas del servidor: uptime, conteos y capacidad.
+ */
 int handle_status(const CoapMessage *req, CoapMessage *resp) {
     (void)req;
     if (!resp) return -1;
@@ -203,6 +266,11 @@ int handle_status(const CoapMessage *req, CoapMessage *resp) {
     return 0;
 }
 
+/*
+ * handle_test_echo (Testing)
+ * -------------------------
+ * POST /test/echo — echo para depuración. Implementación delega en handle_echo.
+ */
 int handle_test_echo(const CoapMessage *req, CoapMessage *resp) {
     // Idéntico a handle_echo (mantener separado para semántica)
     return handle_echo(req, resp);

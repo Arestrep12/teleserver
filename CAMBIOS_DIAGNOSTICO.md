@@ -129,12 +129,3 @@ Todos los tests pasaron exitosamente después de los cambios:
 [WARN] dispatcher error -1, sending 4.00 Bad Request
 ```
 
-## Próximos Pasos para el ESP32
-
-1. Flashear el sketch actualizado a tu ESP32
-2. Ejecutar el servidor con `--verbose`
-3. Observar los logs:
-   - Si ves `[INFO] dispatcher: method=1 path="hello"` → el GET funciona
-   - Si ves `[INFO] dispatcher: method=2 path="echo"` → el POST funciona
-   - Si ves `[ERROR] dispatcher: not a request` → revisar el código del paquete en hexdump
-4. En el monitor serie del ESP32, verificar que recibes respuestas CoAP (código 0x45 = 2.05 Content)

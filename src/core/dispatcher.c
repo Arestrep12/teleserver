@@ -1,8 +1,22 @@
+/*
+ * dispatcher.c — Enrutamiento de requests CoAP a handlers de aplicación.
+ *
+ * Responsabilidades
+ * - Construir respuesta base (mirror de token/message_id, tipo piggyback/ NON).
+ * - Resolver path (Uri-Path) y método, validando 404 y 405 cuando corresponda.
+ * - Separar rutas de producción, testing y legacy.
+ */
 #include "dispatcher.h"
 #include "handlers.h"
 #include "log.h"
 #include <string.h>
 
+/*
+ * init_response_from_request
+ * -------------------------
+ * Inicializa la respuesta a partir de la request: espejo de token/message_id y
+ * tipo piggyback ACK/ NON según el tipo de la request.
+ */
 static void init_response_from_request(const CoapMessage *req, CoapMessage *resp) {
     coap_message_init(resp);
     // Mirror token y message_id; versión constante
@@ -23,12 +37,26 @@ static void init_response_from_request(const CoapMessage *req, CoapMessage *resp
     }
 }
 
+/*
+ * method_from_code
+ * ----------------
+ * Traduce un CoapCode de clase 0.xx al entero del método (GET=1, POST=2,...).
+ * Retorna 0 si no es un método.
+ */
 static int method_from_code(CoapCode code) {
     // Devuelve 1=GET,2=POST,3=PUT,4=DELETE o 0 si no es método
     if (coap_code_class(code) != 0) return 0;
     return (int)code;
 }
 
+/*
+ * dispatcher_handle_request
+ * -------------------------
+ * Punto de entrada del routing. Valida que la request sea válida y de clase
+ * método, extrae el path y decide el handler correspondiente. En errores de
+ * routing, establece resp->code con 4.04/4.05/4.00 y retorna 0 (respuesta
+ * válida codificable). Retorna <0 sólo ante errores no recuperables.
+ */
 int dispatcher_handle_request(const CoapMessage *req, CoapMessage *resp) {
     if (!req || !resp) {
         LOG_ERROR("dispatcher: NULL pointer (req=%p, resp=%p)\n", (void*)req, (void*)resp);

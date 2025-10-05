@@ -217,14 +217,6 @@ Todos los tests existentes pasaron. Los nuevos handlers son compatibles con la i
 - Rate limiting
 - Firewall/Security Groups configurados
 
-## Próximos Pasos
-
-1. **Persistencia:** Guardar en base de datos (SQLite/PostgreSQL)
-2. **Dashboard:** Visualización web de telemetría
-3. **Alertas:** Notificaciones si valores fuera de rango
-4. **Compresión:** CBOR en lugar de JSON
-5. **Autenticación:** Tokens para ESP32 y TeleClient
-
 ## Documentación
 
 Ver documentación completa en:
@@ -232,18 +224,3 @@ Ver documentación completa en:
 - `docs/modules/` - Documentación de cada módulo
 - `README.md` - Overview general del proyecto
 
-## Checklist de Producción
-
-- [x] Arquitectura modular implementada
-- [x] Ring buffer de 100 entradas
-- [x] Rutas API v1 funcionando
-- [x] Validación básica de JSON
-- [x] Logs detallados (RX/TX)
-- [x] Tests pasando
-- [x] ESP32 sketch actualizado
-- [x] Documentación completa
-- [ ] Desplegar en AWS
-- [ ] Verificar con ESP32 real
-- [ ] Monitoreo en producción
-- [ ] Persistencia en base de datos (futuro)
-- [ ] Autenticación (futuro)

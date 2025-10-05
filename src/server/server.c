@@ -1,3 +1,21 @@
+/*
+ * server.c — Integración del bucle de eventos, socket UDP y dispatcher CoAP.
+ *
+ * Responsabilidades
+ * - Crear y gestionar un socket UDP no bloqueante.
+ * - Registrar el socket en el EventLoop y procesar datagramas recibidos.
+ * - Decodificar mensajes CoAP, enrutar la petición y codificar la respuesta.
+ * - Evitar amplificación: datagramas inválidos se descartan silenciosamente.
+ *
+ * Concurrencia
+ * - Diseño single-threaded, orientado a eventos. No se usan hilos internos.
+ *
+ * Errores y logging
+ * - En modo --verbose, se registran RX/TX de CoAP y advertencias de codec/dispatcher.
+ * - Las funciones retornan códigos PLATFORM_* cuando aplica; en fallos de
+ *   decodificación/codificación se omite la respuesta para evitar comportamientos
+ *   inesperados.
+ */
 #include "server.h"
 #include "platform.h"
 #include "event_loop.h"
@@ -22,6 +40,22 @@ struct Server {
     uint16_t port;
 };
 
+/*
+ * process_datagram
+ * -----------------
+ * Decodifica un datagrama UDP como CoAP, lo enruta via dispatcher y envía la
+ * respuesta resultante al mismo peer. Si la decodificación falla, el datagrama
+ * se descarta sin respuesta para evitar amplificación.
+ *
+ * Parámetros
+ * - srv: instancia del servidor (propietaria del socket y flags de verbose).
+ * - buf/n: bytes del datagrama recibido.
+ * - peer/peer_len: dirección del remitente (IPv4/IPv6).
+ *
+ * Comportamiento
+ * - Loggea RX/TX en modo verbose.
+ * - Construye una respuesta 4.00 si el dispatcher retorna error lógico.
+ */
 static void process_datagram(Server *srv,
                              const uint8_t *buf, size_t n,
                              const struct sockaddr *peer, socklen_t peer_len) {
@@ -72,6 +106,15 @@ static void process_datagram(Server *srv,
     (void)platform_socket_sendto(srv->sock, out, (size_t)out_n, peer, peer_len);
 }
 
+/*
+ * on_readable
+ * -----------
+ * Callback registrado en el EventLoop para el socket UDP del servidor. Extrae
+ * todos los datagramas pendientes y delega su procesamiento a process_datagram.
+ *
+ * Notas
+ * - Usa un bucle hasta que recvfrom retorna EAGAIN (no más datos).
+ */
 static void on_readable(int fd, EventType events, void *user_data) {
     (void)events;
     Server *srv = (Server *)user_data;
@@ -91,6 +134,12 @@ static void on_readable(int fd, EventType events, void *user_data) {
     }
 }
 
+/*
+ * query_bound_port
+ * -----------------
+ * Obtiene el puerto efectivo al que fue enlazado el socket (útil cuando se
+ * solicita el puerto 0 para que el SO asigne uno efímero).
+ */
 static uint16_t query_bound_port(int sock) {
     struct sockaddr_in addr;
     socklen_t len = (socklen_t)sizeof(addr);
@@ -101,6 +150,20 @@ static uint16_t query_bound_port(int sock) {
     return 0;
 }
 
+/*
+ * server_create
+ * -------------
+ * Crea una instancia de Server, inicializa el EventLoop, configura el socket UDP
+ * (SO_REUSEADDR, O_NONBLOCK) y lo enlaza al puerto indicado. Registra el socket
+ * en el loop para eventos de lectura.
+ *
+ * Parámetros
+ * - port: puerto UDP (0 permite puerto efímero asignado por el SO).
+ * - verbose: habilita logs informativos y de CoAP RX/TX.
+ *
+ * Retorno
+ * - Puntero Server válido en éxito; NULL en error.
+ */
 Server *server_create(uint16_t port, bool verbose) {
     Server *srv = (Server *)calloc(1, sizeof(Server));
     if (!srv) return NULL;
@@ -140,6 +203,12 @@ Server *server_create(uint16_t port, bool verbose) {
     return srv;
 }
 
+/*
+ * server_destroy
+ * --------------
+ * Libera recursos asociados al servidor: desregistra el FD del loop, cierra el
+ * socket y destruye el EventLoop.
+ */
 void server_destroy(Server *srv) {
     if (!srv) return;
     if (srv->loop && srv->sock >= 0) {
@@ -150,16 +219,36 @@ void server_destroy(Server *srv) {
     free(srv);
 }
 
+/*
+ * server_run
+ * ----------
+ * Ejecuta el bucle de eventos.
+ * - run_timeout_ms < 0: corre indefinidamente hasta server_stop().
+ * - run_timeout_ms >= 0: procesa una iteración con ese timeout y retorna.
+ *
+ * Retorna
+ * - PLATFORM_OK en éxito; PLATFORM_* en error.
+ */
 int server_run(Server *srv, int run_timeout_ms) {
     if (!srv) return PLATFORM_EINVAL;
     return event_loop_run(srv->loop, run_timeout_ms);
 }
 
+/*
+ * server_stop
+ * -----------
+ * Señala al EventLoop para detener su ejecución en la próxima oportunidad.
+ */
 void server_stop(Server *srv) {
     if (!srv) return;
     event_loop_stop(srv->loop);
 }
 
+/*
+ * server_get_port
+ * ---------------
+ * Devuelve el puerto efectivo al que está enlazado el socket del servidor.
+ */
 uint16_t server_get_port(const Server *srv) {
     return srv ? srv->port : 0;
 }

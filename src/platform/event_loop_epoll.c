@@ -1,5 +1,10 @@
 #if defined(__linux__)
 
+/*
+ * event_loop_epoll.c — Implementación de EventLoop usando epoll (Linux).
+ *
+ * API uniforme (event_loop_*) con soporte de timers internos y parada cooperativa.
+ */
 #include "event_loop.h"
 #include "platform.h"
 #include <sys/epoll.h>
@@ -38,6 +43,12 @@ struct EventLoop {
     int next_timer_id;
 };
 
+/*
+ * compute_wait_timeout
+ * --------------------
+ * Determina el timeout para epoll_wait combinando el próximo disparo de los
+ * timers internos y el timeout solicitado para una ejecución de una sola vuelta.
+ */
 static int compute_wait_timeout(EventLoop *loop, int run_timeout_ms) {
     uint64_t now = platform_get_time_ms();
     int64_t ms_to_timer = -1;
@@ -53,6 +64,11 @@ static int compute_wait_timeout(EventLoop *loop, int run_timeout_ms) {
     return 1000;
 }
 
+/*
+ * process_timers
+ * --------------
+ * Dispara callbacks de timers vencidos y reprograma los periódicos.
+ */
 static void process_timers(EventLoop *loop) {
     uint64_t now = platform_get_time_ms();
     for (int i = 0; i < MAX_TIMERS; i++) {
@@ -65,6 +81,11 @@ static void process_timers(EventLoop *loop) {
     }
 }
 
+/*
+ * event_loop_create
+ * -----------------
+ * Crea una instancia EventLoop basada en epoll.
+ */
 EventLoop *event_loop_create(void) {
     EventLoop *loop = calloc(1, sizeof(EventLoop));
     if (!loop) return NULL;
@@ -74,12 +95,22 @@ EventLoop *event_loop_create(void) {
     return loop;
 }
 
+/*
+ * event_loop_destroy
+ * ------------------
+ * Cierra el epoll y libera memoria del EventLoop.
+ */
 void event_loop_destroy(EventLoop *loop) {
     if (!loop) return;
     if (loop->epoll_fd >= 0) close(loop->epoll_fd);
     free(loop);
 }
 
+/*
+ * event_loop_add_fd
+ * -----------------
+ * Registra un FD en epoll con intereses de lectura/escritura.
+ */
 int event_loop_add_fd(EventLoop *loop, int fd, EventType events,
                       EventCallback callback, void *user_data) {
     if (!loop || fd < 0 || fd >= MAX_FDS || !callback) return PLATFORM_EINVAL;
@@ -93,6 +124,11 @@ int event_loop_add_fd(EventLoop *loop, int fd, EventType events,
     return PLATFORM_OK;
 }
 
+/*
+ * event_loop_remove_fd
+ * --------------------
+ * Quita un FD previamente agregado.
+ */
 int event_loop_remove_fd(EventLoop *loop, int fd) {
     if (!loop || fd < 0 || fd >= MAX_FDS) return PLATFORM_EINVAL;
     FdHandler *h = &loop->handlers[fd];
@@ -101,6 +137,11 @@ int event_loop_remove_fd(EventLoop *loop, int fd) {
     h->active = false; return PLATFORM_OK;
 }
 
+/*
+ * event_loop_modify_fd
+ * --------------------
+ * Modifica los intereses de un FD activo en epoll.
+ */
 int event_loop_modify_fd(EventLoop *loop, int fd, EventType events) {
     if (!loop || fd < 0 || fd >= MAX_FDS) return PLATFORM_EINVAL;
     FdHandler *h = &loop->handlers[fd];
@@ -113,6 +154,11 @@ int event_loop_modify_fd(EventLoop *loop, int fd, EventType events) {
     h->events = events; return PLATFORM_OK;
 }
 
+/*
+ * event_loop_add_timer
+ * --------------------
+ * Crea un timer interno gestionado por el bucle. Retorna ID (>0) o -1.
+ */
 int event_loop_add_timer(EventLoop *loop, uint64_t timeout_ms,
                          bool periodic, TimerCallback callback, void *user_data) {
     if (!loop || !callback) return -1;
@@ -131,6 +177,11 @@ int event_loop_add_timer(EventLoop *loop, uint64_t timeout_ms,
     return -1;
 }
 
+/*
+ * event_loop_remove_timer
+ * -----------------------
+ * Desactiva un timer por su identificador.
+ */
 void event_loop_remove_timer(EventLoop *loop, int timer_id) {
     if (!loop) return;
     for (int i = 0; i < MAX_TIMERS; i++) {
@@ -138,6 +189,12 @@ void event_loop_remove_timer(EventLoop *loop, int timer_id) {
     }
 }
 
+/*
+ * event_loop_run
+ * --------------
+ * Bucle principal usando epoll_wait. Despacha eventos y procesa timers.
+ * Si timeout_ms >= 0, ejecuta una sola vuelta y retorna.
+ */
 int event_loop_run(EventLoop *loop, int timeout_ms) {
     if (!loop) return PLATFORM_EINVAL;
     loop->running = true;
@@ -164,7 +221,18 @@ int event_loop_run(EventLoop *loop, int timeout_ms) {
     return PLATFORM_OK;
 }
 
+/*
+ * event_loop_stop
+ * ---------------
+ * Señala al bucle que debe detenerse.
+ */
 void event_loop_stop(EventLoop *loop) { if (loop) loop->running = false; }
+
+/*
+ * event_loop_is_running
+ * ---------------------
+ * Indica si el bucle está ejecutándose.
+ */
 bool event_loop_is_running(EventLoop *loop) { return loop ? loop->running : false; }
 
 #endif // __linux__

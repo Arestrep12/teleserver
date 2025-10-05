@@ -53,7 +53,7 @@ server.h
 - Server*: tipo opaco del servidor.
 - server_create(port, verbose) -> Server* (port=0 => efímero).
 - server_destroy
-- server_run(loop, timeout_ms) -> int: -1 error; <0 códigos platform.
+- server_run(loop, timeout_ms) -> int: PLATFORM_OK en éxito; <0 códigos PLATFORM_* en error.
 - server_stop: Señaliza detener el loop si está en modo infinito.
 - server_get_port(const Server*) -> uint16_t: puerto efectivo.
 

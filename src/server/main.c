@@ -1,3 +1,13 @@
+/*
+ * main.c — Punto de entrada del binario TeleServer.
+ *
+ * Funcionalidad
+ * - Parseo mínimo de argumentos de línea de comandos:
+ *   --port N    Puerto UDP (por defecto 5683; 0 => efímero)
+ *   --verbose   Habilita logging INFO y logs de CoAP RX/TX
+ * - Inicializa plataforma y almacenamiento de telemetría.
+ * - Crea el servidor y ejecuta el EventLoop hasta ser terminado externamente.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,10 +19,26 @@
 #include "log.h"
 #include "telemetry_storage.h"
 
+/*
+ * usage
+ * -----
+ * Imprime la ayuda de línea de comandos.
+ */
 static void usage(const char *prog) {
     fprintf(stderr, "Usage: %s [--port N] [--verbose]\n", prog);
 }
 
+/*
+ * main
+ * ----
+ * Entrada principal del proceso.
+ * - Interpreta flags --port y --verbose.
+ * - Inicializa módulos y ejecuta el servidor en modo bloqueante.
+ *
+ * Retorna
+ * - EXIT_SUCCESS en ejecución normal, EXIT_FAILURE en error de inicialización
+ *   o flags inválidos.
+ */
 int main(int argc, char *argv[]) {
     uint16_t port = 5683;
     bool verbose = false;

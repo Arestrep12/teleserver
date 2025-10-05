@@ -1,6 +1,21 @@
+/*
+ * decode.c — Decodificación de mensajes CoAP (RFC 7252, perfil mínimo).
+ *
+ * Valida versión, TKL, tipos, orden y límites de opciones. Soporta extensiones
+ * 13/14 en delta/length; 15 es inválido. El payload se separa mediante 0xFF.
+ */
 #include "coap_codec.h"
 #include <string.h>
 
+/*
+ * read_extended
+ * -------------
+ * Decodifica el valor extendido para delta/length cuando el nibble es 13 o 14.
+ * - nibble <= 12: el valor es el nibble.
+ * - nibble == 13: valor = 13 + 1 byte.
+ * - nibble == 14: valor = 269 + 2 bytes.
+ * - nibble == 15: inválido (reservado).
+ */
 static int read_extended(const uint8_t *buf, size_t len, size_t *offset,
                          uint8_t nibble, uint32_t *out_value) {
 	if (!buf || !offset || !out_value) return COAP_CODEC_EINVAL;
@@ -29,6 +44,18 @@ static int read_extended(const uint8_t *buf, size_t len, size_t *offset,
 	}
 }
 
+/*
+ * coap_decode
+ * -----------
+ * Parsea un buffer de bytes en una estructura CoapMessage.
+ *
+ * Retorna
+ * - COAP_CODEC_OK en éxito; COAP_CODEC_E* en distintos errores de formato.
+ *
+ * Notas
+ * - Asegura orden ascendente de opciones y límites de longitud.
+ * - Si hay payload marker 0xFF, copia el payload en el buffer interno.
+ */
 int coap_decode(CoapMessage *msg, const uint8_t *buffer, size_t length) {
 	if (!msg || !buffer) return COAP_CODEC_EINVAL;
 	if (length < 4) return COAP_CODEC_EMALFORMED;
